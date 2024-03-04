@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "src/rust_inter_canister_backend"
+    "src/canister_one", 
+    "src/canister_two"
 ]
 resolver = "2"
