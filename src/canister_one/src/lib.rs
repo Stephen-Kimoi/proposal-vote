@@ -1,48 +1,34 @@
 use candid::{CandidType, Deserialize, Principal}; 
-use ic_cdk::update; 
-// use serde::Deserialize; 
+use ic_cdk::{ update, query }; 
 use std::cell::RefCell; 
 use std::collections::BTreeMap; 
+use std::sync::atomic::{AtomicU64, Ordering}; 
 
-type SubscriberStore = BTreeMap<Principal, Subscriber>; 
+type Proposals = BTreeMap<(Principal, u64), Proposal>; 
 
-thread_local! {
-    static SUBSCRIBERS: RefCell<SubscriberStore> = RefCell::default(); 
+thread_local! { 
+    static PROPOSALS: RefCell<Proposals> = RefCell::default(); 
 }
+
+static PROPOSAL_ID: AtomicU64 = AtomicU64::new(0); 
 
 #[derive(Clone, Debug, CandidType, Deserialize)] 
-struct Counter {
-  topic: String, 
-  value: u64, 
+struct Proposal {
+   title: String 
 }
 
-
-#[derive(Clone, Debug, CandidType, Deserialize)]
-struct Subscriber {
-  topic: String 
-} 
-
 #[update] 
-fn subscribe(subscriber: Subscriber) {
-    let subscriber_principal_id = ic_cdk::caller(); 
-    SUBSCRIBERS.with(|subscribers| {
-        subscribers 
-           .borrow_mut()
-           .insert(subscriber_principal_id, subscriber)
+fn propose(proposal: Proposal) {
+    let proposer_id = ic_cdk::caller(); 
+    let proposal_id = PROPOSAL_ID.fetch_add(1, Ordering::SeqCst); 
+    PROPOSALS.with(|proposals|{
+       proposals.borrow_mut().insert((proposer_id, proposal_id), proposal); 
     }); 
 }
 
-#[update]
-async fn publish(counter: Counter){
-    SUBSCRIBERS.with(|subscribers| {
-        for (k,v) in  subscribers.borrow().iter() {
-            if v.topic == counter.topic {
-                let _call_result: Result<(), _> = 
-                    ic_cdk::notify(*k, "update_count", (&counter,)); 
-            }            
-        }
-    })
-}
+#[query] 
+fn list_proposals() -> Proposals {
+   PROPOSALS.with(|proposals| proposals.borrow().clone())
+} 
 
-// Enable Candid export  
-ic_cdk::export_candid!();
+ic_cdk::export_candid!(); 

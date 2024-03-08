@@ -1,3 +1,7 @@
-type Counter = record { topic : text; value : nat64 };
-type Subscriber = record { topic : text };
-service : { publish : (Counter) -> (); subscribe : (Subscriber) -> () }
+type Proposal = record { title : text };
+service : {
+  list_proposals : () -> (
+      vec record { record { principal; nat64 }; Proposal },
+    ) query;
+  propose : (Proposal) -> ();
+}
