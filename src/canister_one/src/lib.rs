@@ -19,6 +19,13 @@ struct Proposal {
    title: String 
 }
 
+#[derive(Clone, Debug, CandidType, Deserialize)] 
+struct ProposalsWithVotes {
+    proposal: Proposal, 
+    yes_votes: u64, 
+    no_votes: u64 
+}
+
 #[update] 
 fn propose(proposal: Proposal) {
     let proposer_id = ic_cdk::caller(); 
@@ -40,5 +47,29 @@ fn vote(proposal_id: u64, vote_value: bool) {
 fn list_proposals() -> Proposals {
    PROPOSALS.with(|proposals| proposals.borrow().clone())
 } 
+
+#[query] 
+fn list_proposals_with_votes() -> BTreeMap<u64, ProposalsWithVotes> {
+    let mut result = BTreeMap::new(); 
+    PROPOSALS.with(|proposals| {
+      for ((_, proposal_id), proposal) in proposals.borrow().iter() {
+        let mut yes_votes = 0; 
+        let mut no_votes = 0; 
+        VOTES.with(|votes| {
+            for((_, vote_proposal_id), vote_value) in votes.borrow().iter() {
+                if proposal_id == vote_proposal_id {
+                   if *vote_value {
+                      yes_votes += 1
+                   } else {
+                    no_votes += 1
+                   }
+                }
+            }
+        });         
+        result.insert(*proposal_id, ProposalsWithVotes { proposal: proposal.clone(), yes_votes, no_votes }); 
+      }  
+    }); 
+    result 
+}
 
 ic_cdk::export_candid!(); 
