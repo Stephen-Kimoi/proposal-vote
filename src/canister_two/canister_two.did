@@ -1,6 +1,16 @@
-type Counter = record { topic : text; value : nat64 };
+type Proposal = record { title : text };
+type ProposalsWithVotes = record {
+  yes_votes : nat64;
+  proposal : Proposal;
+  no_votes : nat64;
+};
 service : {
-  get_count : () -> (nat64) query;
-  setup_subscribe : (principal, text) -> ();
-  update_count : (Counter) -> ();
+  list_proposals : () -> (
+      vec record { record { principal; nat64 }; Proposal },
+    ) query;
+  list_proposals_with_votes : () -> (
+      vec record { nat64; ProposalsWithVotes },
+    ) query;
+  propose : (Proposal) -> ();
+  vote : (nat64, bool) -> ();
 }
