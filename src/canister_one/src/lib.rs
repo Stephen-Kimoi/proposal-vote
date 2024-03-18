@@ -44,8 +44,8 @@ pub fn vote(proposal_id: u64, vote_value: bool) {
 }
 
 #[query] 
-pub fn list_proposals() -> Proposals {
-   PROPOSALS.with(|proposals| proposals.borrow().clone())
+pub fn list_proposals() -> Vec<((Principal, u64), Proposal)> {
+    PROPOSALS.with(|proposals| proposals.borrow().iter().map(|(k, v)| (k.clone(), v.clone())).collect())
 } 
 
 #[query] 
